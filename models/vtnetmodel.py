@@ -57,30 +57,30 @@ class VTNetModel(nn.Module):
         self.image_size = 300
         self.action_embedding_before = args.action_embedding_before
         self.detection_alg = args.detection_alg
-        self.wo_location_enhancement = args.wo_location_enhancement
+        self.wo_location_enhancement = args.wo_location_enhancement    # 这个布尔值或标志可能表明模型是否在没有位置增强的情况下运行
 
         # global visual representation learning networks
-        resnet_embedding_sz = 512
+        resnet_embedding_sz = 512            # 模型期望从 ResNet 模型输出的特征嵌入的维度
         hidden_state_sz = args.hidden_state_sz
-        self.global_conv = nn.Conv2d(resnet_embedding_sz, 256, 1)
-        self.global_pos_embedding = get_gloabal_pos_embedding(7, 128)
+        self.global_conv = nn.Conv2d(resnet_embedding_sz, 256, 1)            # 减少通道维度
+        self.global_pos_embedding = get_gloabal_pos_embedding(7, 128)           # 生成的全局位置嵌入
 
         # previous action embedding networks
         action_space = args.action_space
-        if not self.action_embedding_before:
-            self.embed_action = nn.Linear(action_space, 64)
+        if not self.action_embedding_before:                 # 布尔值是否为 False，决定了接下来将选择哪个动作嵌入网络
+            self.embed_action = nn.Linear(action_space, 64)        # 若False，则定义一个全连接层 (nn.Linear) 来处理动作嵌入，输出维度为 64，将动作空间映射到一个较低维度的向量
         else:
             self.embed_action = nn.Linear(action_space, 256)
 
         # local visual representation learning networks
-        if self.detection_alg == 'detr' and not self.wo_location_enhancement:
-            self.local_embedding = nn.Sequential(
-                nn.Linear(256, 249),
+        if self.detection_alg == 'detr' and not self.wo_location_enhancement:           # 检查是否选择了 detr 作为检测算法且 wo_location_enhancement 为 False
+            self.local_embedding = nn.Sequential(                 # 若满足一个条件，将本地视觉表示学习网络定义一个包含两层的顺序容器
+                nn.Linear(256, 249),              # 输入维度为 256，输出维度为 249
                 nn.ReLU(),
             )
         elif self.detection_alg == 'detr' and self.wo_location_enhancement:
             self.local_embedding = nn.Sequential(
-                nn.Linear(256, 255),
+                nn.Linear(256, 255),             # 在此情况下，全连接层的输出维度为 255
                 nn.ReLU(),
             )
         elif self.detection_alg == 'fasterrcnn':
